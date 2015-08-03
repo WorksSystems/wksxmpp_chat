@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
     int     c, opt;
     void   *xmpp;
 
-    char *host = "localhost", *jid = "test1@localhost/intel1", *pass = "intel123", *tojid = "test1@localhost/intel1";
+    char *host = "localhost", *jid = "user1@localhost/res1", *pass = "1234", *tojid = "user1@localhost/res1";
     int   port = 5222;
 
     while ((opt = getopt(argc, argv, "h:p:w:j:t:")) != -1)
