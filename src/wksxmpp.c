@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "strophe.h"
 #include "wksxmpp.h"
 #include "wksxmpp_common.h"
 
@@ -94,5 +93,11 @@ int wksxmpp_release(void *ins)
     xmpp_shutdown();
     free(xmpp);
     return 0;
+}
+
+xmpp_conn_t *wksxmpp_get_conn(void *ins)
+{
+    wksxmpp_t *xmpp = (wksxmpp_t *) ins;
+    return xmpp->conn;
 }
 

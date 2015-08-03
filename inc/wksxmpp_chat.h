@@ -4,14 +4,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "strophe.h"
 
-typedef int (*wksxmpp_chat_recv_handler)(void *ins, char *from, char *msg);
+typedef int (*wksxmpp_chat_recv_handler)(xmpp_conn_t *conn, char *from,
+        char *msg, void *udata);
 
-int wksxmpp_chat_send_message(void *ins, char *to, char *msg);
+int wksxmpp_chat_send_message(xmpp_conn_t *conn, char *to, char *msg);
 
-void wksxmpp_chat_handler_add(void *ins, wksxmpp_chat_recv_handler handler);
+void wksxmpp_chat_handler_add(xmpp_conn_t *conn, wksxmpp_chat_recv_handler handler,
+        void *udata);
 
-void wksxmpp_chat_handler_del(void *ins, wksxmpp_chat_recv_handler handler);
+void wksxmpp_chat_handler_del(xmpp_conn_t *conn, wksxmpp_chat_recv_handler handler);
 
 #ifdef __cplusplus
 }
