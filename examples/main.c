@@ -5,13 +5,18 @@
 #include <stdbool.h>
 
 #include "wksxmpp.h"
+#include "wksxmpp_utils.h"
 #include "wksxmpp_chat.h"
 
 char g_rejid[256];
 
 int chat_recv_handler(xmpp_conn_t *xmpp, char *from, char *msg, void *udata)
 {
+    char *decdata;
+    size_t decsize;
     fprintf(stderr, "\n  chat_recv_handler(conn<%p>, from'%s', msg'%s'\n\n", xmpp, from, msg);
+    wksxmpp_b64decode(msg, &decdata, &decsize);
+    fprintf(stderr, "\n    try decode(decdata'%s', decsize(%ld))\n", decdata, decsize);
     strcpy(g_rejid, from);
     return 0;
 }
@@ -71,6 +76,15 @@ int main(int argc, char *argv[])
             case 's' :
                 wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), tojid, "hello world");
                 break;
+            case 'e' :
+            {
+                char *data = "hello world base64!!";
+                char *encdata;
+                wksxmpp_b64encode(data, strlen(data), &encdata);
+                wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), tojid, encdata);
+                wksxmpp_b64free(encdata);
+                break;
+            }
             case 'r' :
                 wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), g_rejid, "reply message");
                 break;
