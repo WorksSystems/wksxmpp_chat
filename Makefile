@@ -3,13 +3,15 @@ TARGET=main
 LIBCHAT=wksxmpp_chat
 LIBWKSXMPP=wksxmpp
 
+LIBSTROPHE_BASE?=../libstrophe
+
 AR=ar
 CC=gcc
 CFLAGS=-Wall -Werror -fPIC
 LIBFLAGS=
-INCPATH=-I./inc -I../libstrophe/
-LIBPATH=-L./ -L../libstrophe/.libs/
-RPATH=-Wl,-rpath=./ -Wl,-rpath=../libstrophe/.libs/
+INCPATH=-I./inc -I${LIBSTROPHE_BASE}
+LIBPATH=-L./ -L${LIBSTROPHE_BASE}/.libs/
+RPATH=-Wl,-rpath=./ -Wl,-rpath=${LIBSTROPHE_BASE}/.libs/
 LIBS=-l$(LIBCHAT) -l$(LIBWKSXMPP) -lstrophe -lssl -lcrypto -lexpat -lpthread
 LDFLAGS=$(LIBPATH) $(LIBS)
 
@@ -36,10 +38,10 @@ $(SHAREDLIBCHAT): src/wksxmpp_chat.o
 $(STATICLIBCHAT): src/wksxmpp_chat.o
 	$(AR) -c -r $@ $^
 
-$(SHAREDLIBWKSXMPP): src/wksxmpp.o
+$(SHAREDLIBWKSXMPP): src/wksxmpp.o src/wksxmpp_utils.o
 	$(CC) -o $@ $(LIBFLAGS) -shared $^
 
-$(STATICLIBWKSXMPP): src/wksxmpp.o
+$(STATICLIBWKSXMPP): src/wksxmpp.o src/wksxmpp_utils.o
 	$(AR) -c -r $@ $^
 
 clean:
