@@ -15,8 +15,8 @@ RPATH=-Wl,-rpath=./ -Wl,-rpath=${LIBSTROPHE_BASE}/.libs/
 LIBS=-l$(LIBCHAT) -l$(LIBWKSXMPP) -lstrophe -lssl -lcrypto -lexpat -lpthread -lm
 LDFLAGS=$(LIBPATH) $(LIBS)
 
-MAINOBJ=out/main.o
-LIBOBJS=out/wksxmpp.o out/wksxmpp_utils.o out/wksxmpp_chat.o
+MAINOBJ=examples/main.o
+LIBOBJS=src/wksxmpp.o src/wksxmpp_utils.o src/wksxmpp_chat.o
 
 SHAREDLIBCHAT=lib$(LIBCHAT).so
 STATICLIBCHAT=lib$(LIBCHAT).a
@@ -25,37 +25,30 @@ STATICLIBWKSXMPP=lib$(LIBWKSXMPP).a
 
 LIBRARIES=$(SHAREDLIBCHAT) $(STATICLIBCHAT) $(SHAREDLIBWKSXMPP) $(STATICLIBWKSXMPP)
 
-all: out libraries $(TARGET)
+all: libraries $(TARGET)
 
 libraries: $(LIBRARIES)
-
-out:
-	mkdir -p $@
 
 $(TARGET): $(MAINOBJ)
 	$(CC) -o $@ $(RPATH) $(MAINOBJ) $(LIBPATH) $(LIBS)
 
-$(SHAREDLIBCHAT): out/wksxmpp_chat.o
+$(SHAREDLIBCHAT): src/wksxmpp_chat.o
 	$(CC) -o $@ $(LIBFLAGS) -shared $^
 
-$(STATICLIBCHAT): out/wksxmpp_chat.o
+$(STATICLIBCHAT): src/wksxmpp_chat.o
 	$(AR) -c -r $@ $^
 
-$(SHAREDLIBWKSXMPP): out/wksxmpp.o out/wksxmpp_utils.o
+$(SHAREDLIBWKSXMPP): src/wksxmpp.o src/wksxmpp_utils.o
 	$(CC) -o $@ $(LIBFLAGS) -shared $^
 
-$(STATICLIBWKSXMPP): out/wksxmpp.o out/wksxmpp_utils.o
+$(STATICLIBWKSXMPP): src/wksxmpp.o src/wksxmpp_utils.o
 	$(AR) -c -r $@ $^
 
 clean:
-	rm -rf out $(LIBOBJS) $(LIBRARIES) $(MAINOBJ) $(TARGET)
+	rm -f $(LIBOBJS) $(LIBRARIES) $(MAINOBJ) $(TARGET)
 
-out/%.o: src/%.c
+.c.o:
 	$(CC) -o $@ $(CFLAGS) $(INCPATH) -c $<
 
-out/main.o: examples/main.c
+.c.os:
 	$(CC) -o $@ $(CFLAGS) $(INCPATH) -c $<
-
-#.c.o:
-#	$(CC) -o $@ $(CFLAGS) $(INCPATH) -c $<
-
