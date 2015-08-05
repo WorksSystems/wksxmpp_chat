@@ -6,8 +6,12 @@ extern "C" {
 #endif
 
 #include "strophe.h"
+#include "wksxmpp_types.h"
 
-void *wksxmpp_new();
+typedef int (*wksxmpp_conn_handler)(void *ins, wksxmpp_conninfo_t *conninfo,
+                void *userdata);
+
+void *wksxmpp_new(wksxmpp_conn_handler callback, void *userdata);
 
 void wksxmpp_connect(void *ins, char *host, int port, char *jid, char *pass);
 

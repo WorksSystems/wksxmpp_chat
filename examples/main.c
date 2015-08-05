@@ -10,14 +10,23 @@
 
 char g_rejid[256];
 
-int chat_recv_handler(xmpp_conn_t *xmpp, char *from, char *msg, void *udata)
+static int chat_recv_handler(xmpp_conn_t *xmpp, wksxmpp_data_t *wksdata, void *udata)
 {
     char *decdata;
     size_t decsize;
-    fprintf(stderr, "\n  chat_recv_handler(conn<%p>, from'%s', msg'%s'\n\n", xmpp, from, msg);
-    wksxmpp_b64decode(msg, &decdata, &decsize);
+    fprintf(stderr, "\n  chat_recv_handler(conn<%p>, from'%s', msg'%s'\n\n", xmpp, wksdata->from, (char *) wksdata->data);
+    wksxmpp_b64decode((char *) wksdata->data, &decdata, &decsize);
     fprintf(stderr, "\n    try decode(decdata'%s', decsize(%ld))\n", decdata, decsize);
-    strcpy(g_rejid, from);
+    strcpy(g_rejid, wksdata->from);
+    return 0;
+}
+
+static int conn_handler(void *ins, wksxmpp_conninfo_t *conninfo, void *udata)
+{
+    fprintf(stderr, "\n    conn_handler(ins<%p>, conninfo<%p>, udata<%p>)\n",
+            ins, conninfo, udata);
+    fprintf(stderr, "      status(%d) error(%d) errorType(%d) errorText '%s'\n",
+            conninfo->connevent, conninfo->error, conninfo->errortype, conninfo->errortext);
     return 0;
 }
 
@@ -31,6 +40,7 @@ int main(int argc, char *argv[])
     bool    looping = true;
     int     c, opt;
     void   *xmpp;
+    wksxmpp_data_t wksdata;
 
     char *host = "localhost", *jid = "user1@localhost/res1", *pass = "1234", *tojid = "user1@localhost/res1";
     int   port = 5222;
@@ -61,7 +71,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    xmpp = wksxmpp_new();
+    xmpp = wksxmpp_new(conn_handler, NULL);
     wksxmpp_connect(xmpp, host, port, jid, pass);
     wksxmpp_chat_handler_add(wksxmpp_get_conn(xmpp), chat_recv_handler, xmpp);
     wksxmpp_run_thread(xmpp);
@@ -74,19 +84,25 @@ int main(int argc, char *argv[])
                 looping = false;
                 break;
             case 's' :
-                wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), tojid, "hello world");
+                wksdata.data = "hello world";
+                wksdata.tojid = tojid;
+                wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), &wksdata);
                 break;
             case 'e' :
             {
                 char *data = "hello world base64!!";
                 char *encdata;
                 wksxmpp_b64encode(data, strlen(data), &encdata);
-                wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), tojid, encdata);
+                wksdata.data = encdata;
+                wksdata.tojid = tojid;
+                wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), &wksdata);
                 wksxmpp_b64free(encdata);
                 break;
             }
             case 'r' :
-                wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), g_rejid, "reply message");
+                wksdata.data = "reply message ";
+                wksdata.tojid = g_rejid;
+                wksxmpp_chat_send_message(wksxmpp_get_conn(xmpp), &wksdata);
                 break;
             default :
                 break;

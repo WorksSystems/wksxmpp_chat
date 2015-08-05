@@ -20,17 +20,35 @@ static void _conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t stat
                   const int error, xmpp_stream_error_t * const stream_error, 
                   void * const userdata) 
 {
-    //xmpp_ctx_t  *ctx;
-    //wksxmpp_t      *xmpp;
+    wksxmpp_t      *xmpp;
 
-    fprintf(stderr, "\n  _conn_handler(conn<%p>, status(%d), error(%d), stream_error<%p>, userdata<%p>) \n\n", conn, status, error, stream_error, userdata);
-    //ctx = xmpp_conn_get_context(conn);
-    //xmpp = (wksxmpp_t *) userdata;
+    xmpp = (wksxmpp_t *) userdata;
+
     if (status == XMPP_CONN_CONNECT) {
         _send_presense(conn, "");
     } else {
         fprintf(stderr, "\n    unknown status(%d) \n\n", status);
     }
+
+    if (xmpp->callback != NULL) {
+        wksxmpp_conninfo_t conninfo;
+        conninfo.connevent = (int) status;
+        conninfo.error = error;
+        if (conninfo.error != 0 && stream_error != NULL) {
+            conninfo.errortype = (int) stream_error->type;
+            conninfo.errortext = stream_error->text;
+        } else {
+            conninfo.errortext = NULL;
+            conninfo.errortype = 0;
+        }
+        xmpp->callback(xmpp, &conninfo, xmpp->userdata);
+    }
+}
+
+static int _stanza_handler(xmpp_conn_t * const conn, xmpp_stanza_t * const stanza,
+        void * const userdata)
+{
+    return 1;
 }
 
 static void *pth_func(void *arg)
@@ -41,7 +59,7 @@ static void *pth_func(void *arg)
     return NULL;
 }
 
-void *wksxmpp_new()
+void *wksxmpp_new(wksxmpp_conn_handler cb, void *userdata)
 {
     wksxmpp_t *xmpp;
     xmpp = (wksxmpp_t *) malloc(sizeof(struct _wksxmpp_t));
@@ -51,6 +69,8 @@ void *wksxmpp_new()
     xmpp->log = xmpp_get_default_logger(XMPP_LEVEL_DEBUG);
     xmpp->ctx = xmpp_ctx_new(NULL, xmpp->log);
     xmpp->conn = xmpp_conn_new(xmpp->ctx);
+    xmpp->callback = cb;
+    xmpp->userdata = userdata;
 
     return xmpp;
 }
@@ -60,7 +80,7 @@ void wksxmpp_connect(void *ins, char *host, int port, char *jid, char *pass)
     wksxmpp_t *xmpp = (wksxmpp_t *) ins;
     xmpp_conn_set_jid(xmpp->conn, jid);
     xmpp_conn_set_pass(xmpp->conn, pass);
-
+    xmpp_handler_add(xmpp->conn, _stanza_handler, NULL, NULL, NULL, xmpp);
     xmpp_connect_client(xmpp->conn, NULL, 0, _conn_handler, xmpp);
 }
 

@@ -4,13 +4,13 @@
 #include "wksxmpp_chat.h"
 
 typedef struct _wksxmpp_chat_userdata_t {
-    wksxmpp_chat_recv_handler handler;
+    wksxmpp_chat_handler handler;
     void *userdata;
 } wksxmpp_chat_userdata_t;
 
 static wksxmpp_chat_userdata_t s_chat_udata;
 
-int wksxmpp_chat_send_message(xmpp_conn_t *conn, char *to, char *msg)
+int wksxmpp_chat_send_message(xmpp_conn_t *conn, wksxmpp_data_t *wksdata)
 {
     xmpp_stanza_t *szmsg, *szbody, *sztext;
     xmpp_ctx_t *ctx;
@@ -18,7 +18,7 @@ int wksxmpp_chat_send_message(xmpp_conn_t *conn, char *to, char *msg)
     ctx = xmpp_conn_get_context(conn);
 
     sztext = xmpp_stanza_new(ctx);
-    xmpp_stanza_set_text(sztext, msg);
+    xmpp_stanza_set_text(sztext, wksdata->data);
 
     szbody = xmpp_stanza_new(ctx);
     xmpp_stanza_set_name(szbody, "body");
@@ -27,7 +27,7 @@ int wksxmpp_chat_send_message(xmpp_conn_t *conn, char *to, char *msg)
     szmsg = xmpp_stanza_new(ctx);
     xmpp_stanza_set_name(szmsg, "message");
     xmpp_stanza_set_type(szmsg, "chat");
-    xmpp_stanza_set_attribute(szmsg, "to", to);
+    xmpp_stanza_set_attribute(szmsg, "to", wksdata->tojid);
     xmpp_stanza_add_child(szmsg, szbody);
 
     xmpp_send(conn, szmsg);
@@ -39,7 +39,7 @@ int wksxmpp_chat_send_message(xmpp_conn_t *conn, char *to, char *msg)
 int message_handler(xmpp_conn_t * const conn, xmpp_stanza_t * const stanza,
         void * const userdata)
 {
-        
+    wksxmpp_data_t wksdata;
     char *intext;
 
     wksxmpp_chat_userdata_t *udata = (wksxmpp_chat_userdata_t *) userdata;
@@ -51,12 +51,13 @@ int message_handler(xmpp_conn_t * const conn, xmpp_stanza_t * const stanza,
     intext = xmpp_stanza_get_text(xmpp_stanza_get_child_by_name(stanza, "body"));
 
     printf("Incoming message from %s: %s\n", xmpp_stanza_get_attribute(stanza, "from"), intext);
-    udata->handler(conn, xmpp_stanza_get_attribute(stanza, "from"), intext, udata->userdata);
+    wksdata.from = xmpp_stanza_get_attribute(stanza, "from");
+    wksdata.data = (void *) intext;
+    udata->handler(conn, &wksdata, udata->userdata);
     return 1;
 }
 
-
-void wksxmpp_chat_handler_add(xmpp_conn_t *conn, wksxmpp_chat_recv_handler handler,
+void wksxmpp_chat_handler_add(xmpp_conn_t *conn, wksxmpp_chat_handler handler,
         void *userdata)
 {
     //wksxmpp_chat_userdata_t *udata;
@@ -66,7 +67,7 @@ void wksxmpp_chat_handler_add(xmpp_conn_t *conn, wksxmpp_chat_recv_handler handl
     xmpp_handler_add(conn, message_handler, NULL, "message", "chat", &s_chat_udata);
 }
 
-void wksxmpp_chat_handler_del(xmpp_conn_t *conn, wksxmpp_chat_recv_handler handler)
+void wksxmpp_chat_handler_del(xmpp_conn_t *conn, wksxmpp_chat_handler handler)
 {
     xmpp_handler_delete(conn, message_handler);
 }
